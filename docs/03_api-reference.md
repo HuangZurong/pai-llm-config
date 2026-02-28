@@ -1,121 +1,121 @@
-# API 参考
+# API Reference
 
-## 1. API 设计
+## 1. API Design
 
-### 1.1 核心接口
+### 1.1 Core Interface
 
 ```python
 from pai_llm_config import LLMConfig
-# 或者
+# or
 from pai_llm_config import config
 
-# 默认单例（推荐） — 全进程缓存，线程安全
-cfg = LLMConfig.default()              # 首次调用自动加载 llm-config.yaml，后续返回缓存实例
+# Default singleton (recommended) — process-wide cache, thread-safe
+cfg = LLMConfig.default()              # Auto-loads llm-config.yaml on first call, returns cached instance thereafter
 
-# 加载配置 — 自动发现
-cfg = LLMConfig.load()                     # 自动查找项目根目录下的 llm-config.yaml
+# Load config — auto-discovery
+cfg = LLMConfig.load()                     # Auto-finds llm-config.yaml in project root
 
-# 加载配置 — 显式指定
+# Load config — explicit
 cfg = LLMConfig.load(
-    config_path="llm-config.yaml",  # 配置文件路径（可选，不传则自动发现）
-    profile="production",         # Profile，默认读 LLM_CONFIG_PROFILE 环境变量
-    dotenv=True,                  # 是否加载 .env 文件
+    config_path="llm-config.yaml",  # Config file path (optional, auto-discovers if omitted)
+    profile="production",         # Profile, defaults to LLM_CONFIG_PROFILE env var
+    dotenv=True,                  # Whether to load .env file
 )
 
-# 重置单例（用于切换环境或测试）
+# Reset singleton (for environment switching or testing)
 LLMConfig.reset_default()
 
-# 获取模型配置（按名称或别名）
+# Get model config (by name or alias)
 model = cfg.get("gpt4o")
-model = cfg.get("smart")      # 别名自动解析
+model = cfg.get("smart")      # Alias auto-resolved
 
 model.provider                    # "openai-proxy"
 model.model                       # "gpt-4o"
-model.api_base                    # 代理到 Provider 的 api_base："https://prod-proxy.com/v1"
-model.temperature                 # 0.3（模型级覆盖）
+model.api_base                    # Provider's api_base: "https://prod-proxy.com/v1"
+model.temperature                 # 0.3 (model-level override)
 model.max_context                 # 128000
 model.capabilities                # ["reasoning", "code", "vision", "function_calling"]
 model.cost_per_1k_input           # 0.0025
 
-# 批量获取
+# Batch get
 models = cfg.get_models(["smart", "fast", "cheap"])
 
-# 列出所有可用模型和别名
+# List all available models and aliases
 cfg.list_models()              # ["gpt4o", "claude-sonnet", "deepseek-chat", "qwen-local"]
 cfg.list_aliases()             # {"smart": "gpt4o", "fast": "deepseek-chat", ...}
 ```
 
-### 1.2 路由接口
+### 1.2 Routing Interface
 
-路由方法统一返回 `ModelConfig` 对象（与 `config.get()` 返回类型一致），可直接传给 `create_client()` 等方法。
+Routing methods uniformly return `ModelConfig` objects (same type as `config.get()`), which can be directly passed to `create_client()` and similar methods.
 
 ```python
-# 静态任务路由
+# Static task routing
 model = config.route("code_generation")       # -> ModelConfig (gpt4o)
 model = config.route("summarization")         # -> ModelConfig (deepseek-chat)
-client = config.create_client(model)          # 接受 ModelConfig 或 str
+client = config.create_client(model)          # Accepts ModelConfig or str
 
-# 条件路由
+# Conditional routing
 model = config.route_by(
     capabilities=["reasoning", "code"],
     prefer="cheapest",                         # cheapest / fastest / best
 )
 
 # Fallback
-model = config.get_with_fallback("smart")     # gpt4o 不可用时自动降级
+model = config.get_with_fallback("smart")     # Auto-degrades when gpt4o is unavailable
 
-# 智能路由（P2）
+# Intelligent routing (P2)
 model = config.smart_route(
-    prompt="请帮我重构这段复杂的递归算法...",
+    prompt="Please help me refactor this complex recursive algorithm...",
     strategy="cost_optimized",
 )
 ```
 
-### 1.3 Key 池接口
+### 1.3 Key Pool Interface
 
 ```python
-# 查看 Key 池状态
+# Check key pool status
 pool = config.key_pool("openai-proxy")
 pool.status()
 
-# 用量上报（框架适配器内部调用）
+# Usage reporting (called internally by framework adapters)
 pool.report_usage(key="key1", tokens_in=500, tokens_out=200, cost=0.003)
 pool.report_error(key="key3", error=RateLimitError("429"))
 
-# 事件回调
-config.on_key_exhausted(lambda key: notify(f"{key.alias} 额度用完"))
-config.on_key_error(lambda key, err: log(f"{key.alias} 报错: {err}"))
-config.on_budget_warning(lambda model, usage: alert(f"{model} 已用 {usage.percent}%"))
+# Event callbacks
+config.on_key_exhausted(lambda key: notify(f"{key.alias} quota exhausted"))
+config.on_key_error(lambda key, err: log(f"{key.alias} error: {err}"))
+config.on_budget_warning(lambda model, usage: alert(f"{model} used {usage.percent}%"))
 ```
 
-### 1.4 参数适配（两层设计）
+### 1.4 Parameter Adapters (Two-Layer Design)
 
-适配器分两层，按需选择集成深度：
+Adapters are split into two layers; choose integration depth as needed:
 
 ```
-L1 — 配置参数（dict）     最轻量，零依赖，自己创建客户端，可直接传给 LangChain/DSPy 等框架
-L2 — SDK 客户端工厂       返回原生 SDK 客户端，内置 Key 轮换 + 用量追踪
+L1 — Config params (dict)    Lightest, zero deps, create clients yourself, pass directly to LangChain/DSPy etc.
+L2 — SDK client factory      Returns native SDK clients, with built-in key rotation + usage tracking
 ```
 
-> **设计哲学**：不做 L3 框架适配器。L1 输出的参数可直接传给任何框架：
+> **Design philosophy**: No L3 framework adapters. L1 output params can be passed directly to any framework:
 > ```python
-> ChatOpenAI(**config.params("smart"))          # LangChain（OpenAI SDK 格式）
-> dspy.LM(**config.dspy_params("smart"))        # DSPy（LiteLLM 格式）
+> ChatOpenAI(**config.params("smart"))          # LangChain (OpenAI SDK format)
+> dspy.LM(**config.dspy_params("smart"))        # DSPy (LiteLLM format)
 > litellm.completion(**config.litellm_params("smart"), messages=[...])  # LiteLLM
 > ```
-> L2 层提供一步到位的便捷方法：`config.dspy_client("smart")` 返回已配置的 `dspy` 模块，`config.litellm_client("smart")` 返回 `litellm.Router`。
-> 维护框架适配器 = 版本耦合 + API 追赶 + 导入膨胀，收益极低。
+> L2 provides one-step convenience methods: `config.dspy_client("smart")` returns the pre-configured `dspy` module, `config.litellm_client("smart")` returns a `litellm.Router`.
+> Maintaining framework adapters = version coupling + API chasing + import bloat, with very low ROI.
 
-#### L1 — 配置参数输出（零额外依赖）
+#### L1 — Config Parameter Output (Zero Extra Dependencies)
 
-`to_params()` 根据 provider 的 `type` 输出对应 SDK 的参数格式：
+`to_params()` outputs parameter format based on the provider's `type`:
 
 ```python
 # OpenAI-compatible provider
 params = config.to_params("gpt4o")
 # -> {
 #     "model": "gpt-4o",
-#     "api_key": "sk-xxx",          # 自动从 Key 池选择
+#     "api_key": "sk-xxx",          # Auto-selected from key pool
 #     "base_url": "https://proxy.com/v1",
 #     "temperature": 0.3,
 #     "max_tokens": 2048,
@@ -123,32 +123,32 @@ params = config.to_params("gpt4o")
 from openai import OpenAI
 client = OpenAI(**params)
 
-# Anthropic provider — 输出 Anthropic SDK 参数格式
+# Anthropic provider — outputs Anthropic SDK parameter format
 params = config.to_params("claude-sonnet")
 # -> {
 #     "model": "claude-sonnet-4-20250514",
 #     "api_key": "sk-ant-xxx",
-#     "max_tokens": 2048,            # Anthropic SDK 必填
+#     "max_tokens": 2048,            # Required by Anthropic SDK
 # }
 from anthropic import Anthropic
 client = Anthropic(api_key=params.pop("api_key"))
 
-# LiteLLM 统一格式（屏蔽 provider 差异）
+# LiteLLM unified format (abstracts provider differences)
 params = config.to_litellm_params("gpt4o")
 # -> {"model": "openai/gpt-4o", "api_key": "sk-xxx", "api_base": "https://...", ...}
 import litellm
 response = litellm.completion(messages=[...], **params)
 ```
 
-#### L2 — SDK 客户端工厂（内置 Key 轮换 + 用量追踪）
+#### L2 — SDK Client Factory (Built-in Key Rotation + Usage Tracking)
 
-`create_client()` 根据 provider type 返回不同 SDK 客户端。为了类型安全，提供类型化的工厂方法：
+`create_client()` returns different SDK clients based on provider type. For type safety, typed factory methods are provided:
 
 ```python
-# 通用方法 — 返回 Union[OpenAI, anthropic.Anthropic]，需要自行判断类型
+# Generic method — returns Union[OpenAI, anthropic.Anthropic], requires manual type checking
 client = config.create_client("smart")
 
-# 类型化方法（推荐）— IDE 补全完整，返回类型确定
+# Typed methods (recommended) — full IDE completion, return type is determined
 from openai import OpenAI, AsyncOpenAI
 client: OpenAI = config.create_openai_client("smart")
 async_client: AsyncOpenAI = config.create_async_openai_client("smart")
@@ -157,33 +157,33 @@ import anthropic
 client: anthropic.Anthropic = config.create_anthropic_client("claude-sonnet")
 async_client: anthropic.AsyncAnthropic = config.create_async_anthropic_client("claude-sonnet")
 
-# 如果 provider type 与方法不匹配，抛出 ProviderTypeMismatchError
-# 例如：config.create_openai_client("claude-sonnet") -> ProviderTypeMismatchError
+# Raises ProviderTypeMismatchError if provider type doesn't match the method
+# e.g.: config.create_openai_client("claude-sonnet") -> ProviderTypeMismatchError
 
-# LiteLLM 客户端（返回 litellm.Router，统一接口调用任意模型）
+# LiteLLM client (returns litellm.Router, unified interface for any model)
 client = config.litellm_client("smart")
 response = client.completion(model="smart", messages=[...])
 
-# DSPy 客户端（返回已配置的 dspy 模块，直接使用）
+# DSPy client (returns pre-configured dspy module, ready to use)
 dspy = config.dspy_client("smart")
 qa = dspy.ChainOfThought("question -> answer")
 ```
 
-#### L2 客户端工厂内部机制
+#### L2 Client Factory Internal Mechanism
 
-通过自定义 httpx Transport 层拦截请求，避免 monkey-patch 破坏类型安全：
+Uses custom httpx Transport layer to intercept requests, avoiding monkey-patching that breaks type safety:
 
 ```python
 import httpx
 from openai import OpenAI
 
 class KeyRotationTransport(httpx.BaseTransport):
-    """在 HTTP 层拦截请求，注入 Key 轮换和用量上报。
+    """Intercepts requests at the HTTP layer to inject key rotation and usage reporting.
 
-    优势：
-    - 不修改 SDK 对象的任何方法，类型安全完整保留
-    - 所有 SDK 方法（chat、embeddings、with_options 等）自动受控
-    - 对 streaming 和非 streaming 请求统一处理
+    Advantages:
+    - Does not modify any methods on the SDK object, type safety fully preserved
+    - All SDK methods (chat, embeddings, with_options, etc.) automatically controlled
+    - Unified handling for streaming and non-streaming requests
     """
 
     def __init__(self, key_pool: KeyPool, model_config: ModelConfig):
@@ -192,13 +192,13 @@ class KeyRotationTransport(httpx.BaseTransport):
         self._inner = httpx.HTTPTransport()
 
     def handle_request(self, request: httpx.Request) -> httpx.Response:
-        # 每次请求前按策略选 Key，注入 Authorization header
+        # Select key by strategy before each request, inject Authorization header
         current_key = self._key_pool.get_key()
         request.headers["Authorization"] = f"Bearer {current_key}"
 
         try:
             response = self._inner.handle_request(request)
-            # 从响应中提取 usage 并上报（非 streaming 场景）
+            # Extract usage from response and report (non-streaming scenario)
             self._report_usage_if_available(response, current_key)
             return response
         except Exception as e:
@@ -206,11 +206,11 @@ class KeyRotationTransport(httpx.BaseTransport):
             raise
 
     def _report_usage_if_available(self, response: httpx.Response, key: str):
-        # 解析响应 body 中的 usage 字段，上报用量
+        # Parse usage field from response body and report
         ...
 
 
-# 工厂方法内部逻辑
+# Internal factory method logic
 def create_openai_client(self, name: str) -> OpenAI:
     model_config = self.get(name)
     provider = self._providers[model_config.provider]
@@ -224,29 +224,28 @@ def create_openai_client(self, name: str) -> OpenAI:
     transport = KeyRotationTransport(provider.key_pool, model_config)
 
     return OpenAI(
-        api_key="placeholder",           # 实际 Key 由 transport 注入
+        api_key="placeholder",           # Actual key injected by transport
         base_url=provider.api_base,
         http_client=httpx.Client(transport=transport),
     )
 ```
 
-Anthropic SDK 同样基于 httpx，使用相同的 Transport 拦截机制。
+The Anthropic SDK is also httpx-based, using the same Transport interception mechanism.
 
-> **设计决策**：选择 httpx Transport 而非 monkey-patch 的原因：
+> **Design decision**: Reasons for choosing httpx Transport over monkey-patching:
 >
-> 1. 类型安全 — SDK 对象的所有方法签名不变，IDE 补全完整
-> 2. 全覆盖 — 所有 API 调用（chat、embeddings、files 等）自动经过 transport
-> 3. 可组合 — 可叠加重试、日志、metrics 等多个 transport 层
-> 4. streaming 友好 — 在 HTTP 层统一处理，无需分别 patch sync/async/streaming 方法
+> 1. Type safety — All SDK object method signatures remain unchanged, IDE completion fully intact
+> 2. Full coverage — All API calls (chat, embeddings, files, etc.) automatically go through transport
+> 3. Composable — Can stack retry, logging, metrics, and other transport layers
+> 4. Streaming-friendly — Unified handling at the HTTP layer, no need to separately patch sync/async/streaming methods
 
-### 1.5 预算接口
+### 1.5 Budget Interface
 
 ```python
-config.budget.usage_today()                   # 今日全局用量
-config.budget.usage_today("gpt4o")            # 今日某模型用量
-config.budget.remaining("gpt4o")              # 今日剩余额度
-config.budget.usage_monthly()                 # 本月用量
+config.budget.usage_today()                   # Today's global usage
+config.budget.usage_today("gpt4o")            # Today's usage for a specific model
+config.budget.remaining("gpt4o")              # Today's remaining quota
+config.budget.usage_monthly()                 # Monthly usage
 ```
 
 ---
-

@@ -1,33 +1,33 @@
-# LLM 统一配置管理库
+# Unified LLM Configuration Library
 
-## 文档索引
+## Documentation Index
 
-| 文档 | 内容 |
+| Document | Content |
 |------|------|
-| [01_design.md](01_design.md) | 项目背景、问题描述、市场现状、需求规格 |
-| [02_config-spec.md](02_config-spec.md) | YAML 配置文件完整规范（Provider / Model / Alias / Profile） |
-| [03_api-reference.md](03_api-reference.md) | Python API 设计（LLMConfig / 路由 / Key 池 / 参数适配） |
-| [04_architecture.md](04_architecture.md) | 架构设计、类图、并发安全、Key 池逻辑、语义校验 |
-| [05_roadmap.md](05_roadmap.md) | 技术选型 + 版本路线图（本文件） |
-| [06_examples.md](06_examples.md) | 使用示例（基础、多模型、DSPy、LangChain、LiteLLM、Gemini） |
-| [07_mapping_guide.md](07_mapping_guide.md) | 模型映射与兼容性指南（Mappings 机制、Provider 协议边界） |
+| [01_design.md](01_design.md) | Project background, problem statement, market landscape, requirements |
+| [02_config-spec.md](02_config-spec.md) | Full YAML config file specification (Provider / Model / Alias / Profile) |
+| [03_api-reference.md](03_api-reference.md) | Python API design (LLMConfig / Routing / Key Pool / Parameter Adapters) |
+| [04_architecture.md](04_architecture.md) | Architecture design, class diagram, concurrency safety, key pool logic, semantic validation |
+| [05_roadmap.md](05_roadmap.md) | Tech stack + version roadmap (this file) |
+| [06_examples.md](06_examples.md) | Usage examples (basics, multi-model, DSPy, LangChain, LiteLLM, Gemini) |
+| [07_mapping_guide.md](07_mapping_guide.md) | Model mapping & compatibility guide (Mappings mechanism, provider protocol boundaries) |
 
 ---
 
-## 1. 技术选型
+## 1. Tech Stack
 
-| 组件       | 选型                   | 理由                                 |
-| ---------- | ---------------------- | ------------------------------------ |
-| 配置模型   | Pydantic v2            | 类型校验、序列化、IDE 补全、生态成熟 |
-| 文件解析   | PyYAML + tomli         | YAML/TOML 双支持，覆盖主流格式       |
-| 环境变量   | python-dotenv          | 轻量标准，社区广泛使用               |
-| 变量替换   | 自实现 `${VAR}` 解析 | 简单，不引入额外依赖                 |
-| 用量存储   | SQLite（默认）         | 零部署，单机持久化                   |
-| 分布式存储 | Redis（可选）          | 多进程/多实例共享                    |
-| 框架适配   | 插件模式 + extras      | 按需安装，不强制依赖任何框架         |
-| CLI        | click / typer          | 快速构建命令行工具                   |
+| Component | Choice | Rationale |
+| --- | --- | --- |
+| Config model | Pydantic v2 | Type validation, serialization, IDE completion, mature ecosystem |
+| File parsing | PyYAML + tomli | YAML/TOML dual support, covers mainstream formats |
+| Environment variables | python-dotenv | Lightweight standard, widely used in the community |
+| Variable substitution | Custom `${VAR}` parser | Simple, no extra dependencies |
+| Usage storage | SQLite (default) | Zero deployment, single-machine persistence |
+| Distributed storage | Redis (optional) | Multi-process/multi-instance sharing |
+| Framework adapters | Plugin mode + extras | Install on demand, no forced dependency on any framework |
+| CLI | click / typer | Rapid CLI tool development |
 
-### 依赖策略
+### Dependency Strategy
 
 ```toml
 # pai-llm-config/pyproject.toml
@@ -41,9 +41,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-openai = ["openai>=1.0"]       # L2 OpenAI / OpenAI-compatible 客户端
-anthropic = ["anthropic>=0.30"] # L2 Anthropic 客户端
-litellm = ["litellm>=1.0"]     # L2 LiteLLM 统一客户端
+openai = ["openai>=1.0"]       # L2 OpenAI / OpenAI-compatible clients
+anthropic = ["anthropic>=0.30"] # L2 Anthropic client
+litellm = ["litellm>=1.0"]     # L2 LiteLLM unified client
 redis = ["redis>=5.0"]
 vault = ["hvac>=2.0"]           # HashiCorp Vault
 aws = ["boto3>=1.34"]           # AWS Secrets Manager
@@ -52,76 +52,75 @@ all = ["pai-llm-config[openai,anthropic,litellm,redis,vault,aws]"]
 
 ---
 
-## 2. 实现路线图
+## 2. Implementation Roadmap
 
-### v0.1 — 能用（核心配置）
+### v0.1 — Functional (Core Config)
 
-- [x] Pydantic 数据模型定义（Provider / Model / Alias）
-- [x] YAML 配置文件加载
-- [x] `${VAR}` 环境变量解析
-- [x] .env 文件加载
-- [x] `config.get()` 按名称/别名获取模型配置
-- [x] 多环境支持（profiles 覆盖）
-- [x] 全局单例 `llm`（懒加载、线程安全、可重置）
-- [x] 外部名称映射（mappings）
-- [x] 配置文件自动发现（llm-config.yaml/yml，含子目录）
-- [x] flashboot_core 集成（项目根路径、Profile 检测）
-- [x] 语义校验（provider 引用、别名冲突、类型检查）
-- [x] 单元测试（194 tests）
+- [x] Pydantic data model definitions (Provider / Model / Alias)
+- [x] YAML config file loading
+- [x] `${VAR}` environment variable resolution
+- [x] .env file loading
+- [x] `config.get()` to retrieve model config by name/alias
+- [x] Multi-environment support (profile overrides)
+- [x] Global singleton `config` (lazy loading, thread-safe, resettable)
+- [x] External name mappings (mappings)
+- [x] Config file auto-discovery (llm-config.yaml/yml, including subdirectories)
+- [x] flashboot_core integration (project root path, profile detection)
+- [x] Semantic validation (provider references, alias conflicts, type checks)
+- [x] Unit tests (194 tests)
 
-### v0.2 — 好用（参数适配 + 静态路由）
+### v0.2 — Usable (Parameter Adapters + Static Routing)
 
-- [x] L1 配置参数输出（to_params / to_litellm_params）
-- [x] 默认参数合并逻辑（defaults -> model 级覆盖，含 top_p/stop/seed/response_format）
-- [x] L2 客户端工厂 — OpenAI / OpenAI-compatible（create_client / create_async_client）
-- [x] L2 客户端工厂 — Anthropic（create_anthropic_client / create_async_anthropic_client）
-- [x] L2 客户端工厂 — LiteLLM 统一客户端（create_litellm_client）
-- [x] L2 Streaming 支持（stream=True，流结束后自动上报用量）
-- [x] 静态任务路由（routing.presets）
+- [x] L1 config parameter output (to_params / to_litellm_params)
+- [x] Default parameter merging logic (defaults -> model-level override, including top_p/stop/seed/response_format)
+- [x] L2 client factory — OpenAI / OpenAI-compatible (create_client / create_async_client)
+- [x] L2 client factory — Anthropic (create_anthropic_client / create_async_anthropic_client)
+- [x] L2 client factory — LiteLLM unified client (create_litellm_client)
+- [x] L2 Streaming support (stream=True, auto-reports usage after stream ends)
+- [x] Static task routing (routing.presets)
 
-### v0.3 — 多 Key 池
+### v0.3 — Multi-Key Pool
 
-- [x] KeyPool 管理器
-- [x] priority / round_robin / least_used / random 策略
-- [x] 内存用量追踪
-- [x] Key 健康检查（错误计数 + 自动标记不可用）
-- [x] 单 Key / 多 Key 配置兼容
-- [x] L2 客户端工厂集成 Key 轮换钩子（调用前自动选 Key、调用后自动上报用量）
-- [ ] Embedding 模型支持（type: embedding，L2 包装 embeddings.create）
+- [x] KeyPool manager
+- [x] priority / round_robin / least_used / random strategies
+- [x] In-memory usage tracking
+- [x] Key health checks (error counting + auto-mark unavailable)
+- [x] Single key / multi-key config compatibility
+- [x] L2 client factory integrated key rotation hooks (auto key selection before calls, auto usage reporting after)
+- [ ] Embedding model support (type: embedding, L2 wraps embeddings.create)
 
-### v0.4 — 持久化 + 预算
+### v0.4 — Persistence + Budgets
 
-- [ ] SQLite 用量持久化
-- [ ] 预算控制（日/月限额）
-- [ ] 事件回调（on_key_exhausted / on_budget_warning）
+- [ ] SQLite usage persistence
+- [ ] Budget control (daily/monthly limits)
+- [ ] Event callbacks (on_key_exhausted / on_budget_warning)
 
-### v0.5 — 条件路由 + Fallback
+### v0.5 — Conditional Routing + Fallback
 
-- [ ] 条件规则路由（routing.rules）
-- [ ] Fallback 链
-- [ ] route_by() 接口
+- [ ] Conditional rule routing (routing.rules)
+- [ ] Fallback chains
+- [ ] route_by() interface
 
-### v0.6 — 智能路由
+### v0.6 — Intelligent Routing
 
-- [ ] RouterStrategy 插件接口
-- [ ] 集成 RouteLLM
-- [ ] cost_optimized / quality_first / latency_first 策略
-- [ ] smart_route() 接口
+- [ ] RouterStrategy plugin interface
+- [ ] RouteLLM integration
+- [ ] cost_optimized / quality_first / latency_first strategies
+- [ ] smart_route() interface
 
-### v0.7 — 完善
+### v0.7 — Polish
 
-- [ ] CLI 工具（init / validate / status）
-- [ ] TOML 配置支持
-- [ ] Redis 用量追踪后端
-- [ ] 密钥管理服务集成（Vault / AWS SM）
-- [ ] 热重载
-- [ ] 完整文档 + PyPI 发布
+- [ ] CLI tools (init / validate / status)
+- [ ] TOML config support
+- [ ] Redis usage tracking backend
+- [ ] Secret management integration (Vault / AWS SM)
+- [ ] Hot reload
+- [ ] Full documentation + PyPI publish
 
-### v0.8 — 生态集成 (LiteLLM Deep Binding)
+### v0.8 — Ecosystem Integration (LiteLLM Deep Binding)
 
-- [ ] **LiteLLM 配置镜像 (Config Mirroring)**：支持将 `LLMConfig` 导出为 LiteLLM Proxy `config.yaml` 格式。
-- [ ] **原生集成工厂 (Native Factory)**：实现 `ModelConfig.to_litellm_params()` 提供给 `litellm.completion` 的全量参数载荷。
-- [ ] **治理监测回调 (Governance Callbacks)**：内置 LiteLLM 观测回调，将成本和用量实时泵回 `pai-llm-config` 并触发预警。
-- [ ] **统一凭据注入 (Unified Credential Injector)**：打通安全 Provider 密钥向 LiteLLM 运行时上下文的无缝注入。
-- [ ] **零配置增强入口 (Zero-config Bridge)**：提供 `pai_llm_config.integrations.litellm` 模块，直接导入即可使用带映射、别名和治理钩子自动加持的 `completion` 函数。
-
+- [ ] **LiteLLM Config Mirroring**: Export `LLMConfig` as LiteLLM Proxy `config.yaml` format.
+- [ ] **Native Factory**: Implement `ModelConfig.to_litellm_params()` providing full parameter payload for `litellm.completion`.
+- [ ] **Governance Callbacks**: Built-in LiteLLM observation callbacks that pump cost and usage back to `pai-llm-config` in real-time for alerting.
+- [ ] **Unified Credential Injector**: Bridge secure provider credentials seamlessly into LiteLLM runtime context.
+- [ ] **Zero-config Bridge**: Provide `pai_llm_config.integrations.litellm` module — import and directly use `completion` function with automatic mapping, alias, and governance hooks.

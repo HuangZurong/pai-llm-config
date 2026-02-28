@@ -1,14 +1,14 @@
-# 配置文件规范
+# Configuration File Specification
 
-## 1. 配置文件设计
+## 1. Configuration File Design
 
-### 1.1 完整配置示例
+### 1.1 Complete Configuration Example
 
 ```yaml
 version: "1"
 
 # ============================================================
-# 全局默认参数
+# Global default parameters
 # temperature: 0.0 ~ 2.0, top_p: 0.0 ~ 1.0
 # ============================================================
 defaults:
@@ -17,17 +17,17 @@ defaults:
   timeout: 30
 
 # ============================================================
-# Provider 配置
+# Provider Configuration
 # ============================================================
 providers:
-  # --- 单 Key（简写） ---
+  # --- Single key (shorthand) ---
   anthropic:
-    type: anthropic # anthropic SDK 原生协议
+    type: anthropic # Anthropic SDK native protocol
     api_key: ${ANTHROPIC_API_KEY}
 
-  # --- 多 Key 池 ---
+  # --- Multi-key pool ---
   openai-proxy:
-    type: openai # OpenAI-compatible 协议
+    type: openai # OpenAI-compatible protocol
     api_base: https://proxy.com/v1
     api_keys:
       - key: ${OPENAI_KEY_1}
@@ -48,47 +48,48 @@ providers:
         daily_limit_usd: 3
         priority: 3
 
-    key_strategy: priority # provider 级默认策略
+    key_strategy: priority # Provider-level default strategy
 
   # --- Azure ---
   azure:
-    type: azure # Azure OpenAI 协议
+    type: azure # Azure OpenAI protocol
     api_key: ${AZURE_API_KEY}
     api_base: https://my-resource.openai.azure.com
     api_version: "2024-02-01"
 
   # --- DeepSeek ---
   deepseek:
-    type: openai # DeepSeek 兼容 OpenAI 协议
+    type: openai # DeepSeek is OpenAI-compatible
     api_key: ${DEEPSEEK_API_KEY}
     api_base: https://api.deepseek.com/v1
 
-  # --- 本地模型 ---
+  # --- Local models ---
   local:
-    type: openai # Ollama 兼容 OpenAI 协议
+    type: openai # Ollama is OpenAI-compatible
     api_base: http://localhost:11434
 
-  # --- Google Gemini（通过 OpenAI-compatible 端点） ---
+  # --- Google Gemini (via OpenAI-compatible endpoint) ---
   google:
-    type: openai # Google 提供官方 OpenAI 兼容端点
+    type: openai # Google provides an official OpenAI-compatible endpoint
     api_key: ${GOOGLE_API_KEY}
     api_base: https://generativelanguage.googleapis.com/v1beta/openai/
 
 # ============================================================
-# 模型注册
-# cost_per_1k_input / cost_per_1k_output 可省略，库内置主流模型
-# 的默认价格表（定期更新）。用户配置的值优先于内置默认值。
+# Model Registry
+# cost_per_1k_input / cost_per_1k_output can be omitted; the library
+# includes built-in default pricing for mainstream models (updated
+# periodically). User-configured values take precedence.
 # ============================================================
 models:
   gpt4o:
     provider: openai-proxy
     model: gpt-4o
-    # cost_per_1k_input / cost_per_1k_output 省略，使用内置默认值
+    # cost_per_1k_input / cost_per_1k_output omitted, using built-in defaults
     max_context: 128000
     capabilities: [reasoning, code, vision, function_calling]
     latency_tier: medium # low / medium / high
-    temperature: 0.3 # 覆盖全局默认值
-    key_strategy: priority # 模型级覆盖 provider 的 key_strategy（贵模型优先用高优先级 Key）
+    temperature: 0.3 # Overrides global default
+    key_strategy: priority # Model-level override of provider's key_strategy (expensive models prefer high-priority keys)
 
   claude-sonnet:
     provider: anthropic
@@ -100,7 +101,7 @@ models:
   deepseek-chat:
     provider: deepseek
     model: deepseek-chat
-    cost_per_1k_input: 0.0001 # 非主流模型需手动配置价格
+    cost_per_1k_input: 0.0001 # Non-mainstream models need manual pricing
     cost_per_1k_output: 0.0002
     max_context: 64000
     capabilities: [reasoning, code, function_calling]
@@ -122,17 +123,17 @@ models:
     capabilities: [reasoning, code, vision, function_calling]
     latency_tier: low
 
-  # --- Embedding 模型 ---
+  # --- Embedding model ---
   text-embedding-3:
     provider: openai-proxy
     model: text-embedding-3-small
-    type: embedding # 标记为 embedding 模型
+    type: embedding # Marks this as an embedding model
     cost_per_1k_input: 0.00002
     dimensions: 1536
     max_context: 8191
 
 # ============================================================
-# 语义别名
+# Semantic Aliases
 # ============================================================
 aliases:
   smart: gpt4o
@@ -141,10 +142,10 @@ aliases:
   balanced: claude-sonnet
 
 # ============================================================
-# 任务路由
+# Task Routing
 # ============================================================
 routing:
-  # 静态预设
+  # Static presets
   presets:
     code_generation: smart
     summarization: fast
@@ -153,7 +154,7 @@ routing:
     translation: balanced
     chat: fast
 
-  # 条件规则（按顺序匹配，命中即停）
+  # Conditional rules (matched in order, stops on first match)
   rules:
     - when:
         max_tokens_gt: 4000
@@ -167,7 +168,7 @@ routing:
     - default: balanced
 
 # ============================================================
-# 智能路由（P2）
+# Intelligent Routing (P2)
 # ============================================================
 smart_routing:
   enabled: false
@@ -178,14 +179,14 @@ smart_routing:
     min_quality_score: 0.8
 
 # ============================================================
-# Fallback 链
+# Fallback Chains
 # ============================================================
 fallbacks:
   smart: [gpt4o, claude-sonnet, deepseek-chat]
   fast: [deepseek-chat, qwen-local]
 
 # ============================================================
-# 预算控制
+# Budget Control
 # ============================================================
 budgets:
   global:
@@ -198,7 +199,7 @@ budgets:
       daily_limit_usd: 20
 
 # ============================================================
-# 用量追踪
+# Usage Tracking
 # ============================================================
 tracking:
   backend: sqlite # memory / sqlite / redis
@@ -206,7 +207,7 @@ tracking:
   # redis_url: redis://localhost:6379/0
 
 # ============================================================
-# 外部名称映射（适配第三方硬编码的模型名）
+# External Name Mappings (adapts third-party hardcoded model names)
 # ============================================================
 mappings:
   "openai/gpt-4": smart
@@ -214,7 +215,7 @@ mappings:
   "gpt-4o": gpt4o
 
 # ============================================================
-# 多环境覆盖（Profile）
+# Multi-environment Overrides (Profiles)
 # ============================================================
 profiles:
   development:
@@ -222,31 +223,31 @@ profiles:
       openai-proxy:
         api_base: https://dev-proxy.com/v1
     defaults:
-      temperature: 0.9 # 开发环境更随机
+      temperature: 0.9 # More randomness in dev
 
   production:
     providers:
       openai-proxy:
         api_base: https://prod-proxy.com/v1
     defaults:
-      temperature: 0.3 # 生产环境更稳定
+      temperature: 0.3 # More stability in production
 ```
 
-### 1.2 配置优先级（从高到低）
+### 1.2 Configuration Priority (Highest to Lowest)
 
 ```
-环境变量 > .env 文件 > Profile 覆盖（profiles.{name}） > 配置文件主体 > defaults
+Environment variables > .env file > Profile overrides (profiles.{name}) > Config file body > defaults
 ```
 
-### 1.3 单 Key 与多 Key 兼容
+### 1.3 Single Key & Multi-Key Compatibility
 
 ```yaml
-# 单 Key 简写 — 向后兼容，零迁移成本
+# Single key shorthand — backward compatible, zero migration cost
 providers:
   anthropic:
     api_key: ${ANTHROPIC_API_KEY}
 
-# 多 Key 完整写法
+# Multi-key full syntax
 providers:
   openai-proxy:
     api_keys:
@@ -257,28 +258,28 @@ providers:
     key_strategy: priority
 ```
 
-内部统一转换为 KeyPool，单 Key 等价于只有一个元素的 Key 池。
+Internally, both are unified into a KeyPool; a single key is equivalent to a key pool with one element.
 
-`key_strategy` 支持两级配置：provider 级设置默认策略，模型级可覆盖。同一 provider 下不同模型可以使用不同策略（例如 GPT-4 用 `priority` 省钱，GPT-3.5 用 `round_robin` 分散负载）。模型级未配置时继承 provider 级策略。
+`key_strategy` supports two-level configuration: provider-level sets the default strategy, model-level can override. Different models under the same provider can use different strategies (e.g., GPT-4 uses `priority` to save money, GPT-3.5 uses `round_robin` to distribute load). If model-level is not configured, it inherits the provider-level strategy.
 
-### 1.4 Provider 类型
+### 1.4 Provider Types
 
-每个 provider 必须声明 `type` 字段，用于决定使用哪种 SDK 协议：
+Each provider must declare a `type` field, which determines which SDK protocol to use:
 
-| type          | 说明                                                  | 对应 SDK                 |
-| ------------- | ----------------------------------------------------- | ------------------------ |
-| `openai`    | OpenAI-compatible 协议（含代理、DeepSeek、Ollama 等） | `openai`               |
-| `anthropic` | Anthropic 原生协议                                    | `anthropic`            |
-| `azure`     | Azure OpenAI 协议                                     | `openai`（Azure 模式） |
-| `litellm`   | 通过 LiteLLM 统一代理                                 | `litellm`              |
+| type | Description | Corresponding SDK |
+| --- | --- | --- |
+| `openai` | OpenAI-compatible protocol (including proxies, DeepSeek, Ollama, etc.) | `openai` |
+| `anthropic` | Anthropic native protocol | `anthropic` |
+| `azure` | Azure OpenAI protocol | `openai` (Azure mode) |
+| `litellm` | Unified proxy via LiteLLM | `litellm` |
 
-`type` 字段不可省略。如果缺失，加载时抛出 `ConfigValidationError`。
+The `type` field cannot be omitted. If missing, `ConfigValidationError` is raised at load time.
 
-> **设计决策**：不做自动推断。provider 名称是用户自定义的（如 `openai-proxy`、`my-company-gateway`），无法可靠推断协议类型。显式声明消除歧义，也让配置文件自文档化。
+> **Design decision**: No auto-inference. Provider names are user-defined (e.g., `openai-proxy`, `my-company-gateway`) and cannot reliably infer protocol type. Explicit declaration removes ambiguity and makes the config file self-documenting.
 
-### 1.5 最小配置
+### 1.5 Minimal Configuration
 
-对于"一个 provider + 一个模型"的简单场景，最小可用配置如下：
+For the simple "one provider + one model" scenario, the minimal usable configuration is:
 
 ```yaml
 version: "1"
@@ -294,7 +295,7 @@ models:
     model: gpt-4o
 ```
 
-使用：
+Usage:
 
 ```python
 from pai_llm_config import LLMConfig
@@ -306,38 +307,39 @@ response = client.chat.completions.create(
 )
 ```
 
-未声明的参数（temperature、max_tokens 等）使用 SDK 默认值，不强制要求配置 defaults、aliases、routing 等高级功能。
+Undeclared parameters (temperature, max_tokens, etc.) use SDK defaults; there is no requirement to configure defaults, aliases, routing, or other advanced features.
 
-### 1.6 Profile 覆盖范围
+### 1.6 Profile Override Scope
 
-`profiles` 块支持覆盖以下顶层字段：
+The `profiles` block supports overriding the following top-level fields:
 
-| 字段          | 可覆盖 | 说明                                  |
-| ------------- | ------ | ------------------------------------- |
-| `defaults`  | ✅     | 覆盖全局默认参数                      |
-| `providers` | ✅     | 覆盖 provider 的 api_base、api_key 等 |
-| `models`    | ✅     | 覆盖模型参数（如 temperature）        |
-| `aliases`   | ✅     | 不同环境指向不同模型                  |
-| `routing`   | ✅     | 不同环境使用不同路由规则              |
-| `budgets`   | ✅     | 不同环境设置不同预算                  |
-| `tracking`  | ✅     | 不同环境使用不同追踪后端              |
-| `fallbacks` | ✅     | 不同环境使用不同 fallback 链          |
-| `mappings`  | ✅     | 不同环境使用不同外部名称映射          |
+| Field | Overridable | Description |
+| --- | --- | --- |
+| `defaults` | Yes | Override global default parameters |
+| `providers` | Yes | Override provider api_base, api_key, etc. |
+| `models` | Yes | Override model parameters (e.g., temperature) |
+| `aliases` | Yes | Point to different models in different environments |
+| `routing` | Yes | Use different routing rules in different environments |
+| `budgets` | Yes | Set different budgets in different environments |
+| `tracking` | Yes | Use different tracking backends in different environments |
+| `fallbacks` | Yes | Use different fallback chains in different environments |
+| `mappings` | Yes | Use different external name mappings in different environments |
 
-覆盖采用深度合并（deep merge）策略：Profile 配置与主配置递归合并，Profile 配置优先。列表类型字段（如 `api_keys`）整体替换而非追加。
+Overrides use a deep merge strategy: profile config is recursively merged with the main config, with profile config taking priority. List-type fields (e.g., `api_keys`) are replaced entirely rather than appended.
 
-### 1.7 配置文件自动发现
+### 1.7 Config File Auto-Discovery
 
-`LLMConfig.load()` 不传路径时，自动从项目根目录查找配置文件，零配置即可使用。
+When `LLMConfig.load()` is called without a path, it automatically finds the config file from the project root — zero configuration needed.
 
-#### 查找策略
+#### Discovery Strategy
 
-1. 确定项目根目录（按优先级）：
+1. Determine project root (by priority):
 
-   - 环境变量 `LLM_CONFIG_ROOT`（显式指定）
-   - `flashboot_core.utils.project_utils.get_root_path()`（如果已安装）
-   - 向上查找 `pyproject.toml` / `.git` 等标记文件（内置 fallback）
-2. 从项目根目录按顺序查找配置文件（命中即停）：
+   - Environment variable `LLM_CONFIG_ROOT` (explicit override)
+   - `flashboot_core.utils.project_utils.get_root_path()` (if installed)
+   - Walk up to find marker files like `pyproject.toml` / `.git` (built-in fallback)
+
+2. Search for config files from the project root (stops on first match):
 
 ```
 {root}/llm-config.yaml
@@ -346,74 +348,74 @@ response = client.chat.completions.create(
 {root}/config/llm-config.yml
 {root}/resources/llm-config.yaml
 {root}/resources/llm-config.yml
-{root}/.llm-config.yaml              # 隐藏文件风格
+{root}/.llm-config.yaml              # Hidden file style
 ```
 
-3. Profile 自动检测（按优先级）：
-   - `LLM_CONFIG_PROFILE` 环境变量（推荐）
-   - `LLM_CONFIG_ENV` 环境变量（向后兼容）
-   - `flashboot_core.env.Environment.get_active_profiles()`（如果已安装）
-   - 默认不激活任何 Profile
+3. Profile auto-detection (by priority):
+   - `LLM_CONFIG_PROFILE` environment variable (recommended)
+   - `LLM_CONFIG_ENV` environment variable (backward compatibility)
+   - `flashboot_core.env.Environment.get_active_profiles()` (if installed)
+   - No profile activated by default
 
-#### 与 flashboot_core 的集成
+#### flashboot_core Integration
 
-flashboot_core 是可选依赖，不强制安装。集成采用运行时检测：
+flashboot_core is an optional dependency, not required. Integration uses runtime detection:
 
 ```python
-# pai_llm_config 内部实现
+# pai_llm_config internal implementation
 def _find_root() -> Path:
-    # 1. 显式环境变量
+    # 1. Explicit environment variable
     if root := os.environ.get("LLM_CONFIG_ROOT"):
         return Path(root)
 
-    # 2. flashboot_core（如果可用）
+    # 2. flashboot_core (if available)
     try:
         from flashboot_core.utils import project_utils
         return Path(project_utils.get_root_path())
     except ImportError:
         pass
 
-    # 3. 内置 fallback — 向上查找标记文件
+    # 3. Built-in fallback — walk up looking for marker files
     return _find_root_by_markers(Path.cwd())
 ```
 
-这样在 flashboot_core 生态内的项目自动受益于其智能根路径发现（git/svn/markers/structure），独立使用时也能正常工作。
+This way, projects within the flashboot_core ecosystem automatically benefit from its smart root path discovery (git/svn/markers/structure), while standalone usage also works fine.
 
-### 1.8 全局单例（零样板代码）
+### 1.8 Global Singleton (Zero Boilerplate)
 
-LLM 配置在项目中到处使用，每次都手动 load + 传递 config 对象很繁琐。提供全局单例模块，一行代码直接用：
+LLM configuration is used everywhere in a project; manually loading and passing the config object every time is tedious. A global singleton module provides one-line access:
 
 ```python
 # ============================================================
-# 任意模块中直接使用，无需手动 load
+# Use directly in any module, no manual loading needed
 # ============================================================
-from pai_llm_config import llm
+from pai_llm_config import config
 
-# L2 — 拿客户端
-client = llm.create_client("smart")                  # -> OpenAI(...) 或 Anthropic(...)
-client = llm.openai_client("smart")                  # -> OpenAI(...)（类型化）
-client = llm.anthropic_client("claude-sonnet")       # -> anthropic.Anthropic(...)
+# L2 — Get clients
+client = config.create_client("smart")                  # -> OpenAI(...) or Anthropic(...)
+client = config.openai_client("smart")                  # -> OpenAI(...) (typed)
+client = config.anthropic_client("claude-sonnet")       # -> anthropic.Anthropic(...)
 
-# L1 — 拿参数（可直接传给任何框架）
-params = llm.params("gpt4o")                         # -> dict
-params = llm.litellm_params("gpt4o")                 # -> dict（LiteLLM 格式）
+# L1 — Get params (can be passed directly to any framework)
+params = config.params("gpt4o")                         # -> dict
+params = config.litellm_params("gpt4o")                 # -> dict (LiteLLM format)
 
-# 也可一行接入 LangChain / DSPy 等框架：
+# Also one-line integration with LangChain / DSPy:
 # from langchain_openai import ChatOpenAI
-# chat = ChatOpenAI(**llm.params("smart"))
+# chat = ChatOpenAI(**config.params("smart"))
 
-# 路由
-model = llm.route("code_generation")                 # -> ModelConfig
+# Routing
+model = config.route("code_generation")                 # -> ModelConfig
 
-# 配置信息
-llm.list_models()
-llm.list_aliases()
+# Config info
+config.list_models()
+config.list_aliases()
 ```
 
-#### 内部机制
+#### Internal Mechanism
 
 ```python
-# pai_llm_config/llm.py
+# pai_llm_config/__init__.py
 from pai_llm_config import LLMConfig
 
 _config: LLMConfig | None = None
@@ -421,7 +423,7 @@ _config: LLMConfig | None = None
 def _get_config() -> LLMConfig:
     global _config
     if _config is None:
-        _config = LLMConfig.load()              # 自动发现，首次访问时加载
+        _config = LLMConfig.load()              # Auto-discover, loads on first access
     return _config
 
 def client(name: str):
@@ -433,27 +435,27 @@ def openai_client(name: str):
 def params(name: str) -> dict:
     return _get_config().to_params(name)
 
-# ... 其他方法同理
+# ... other methods follow the same pattern
 ```
 
-特性：
+Features:
 
-- 懒加载 — 首次调用时才加载配置，import 零开销
-- 线程安全 — 内部使用 `threading.Lock` 保护初始化
-- 可重置 — `llm.reload()` 强制重新加载（配置文件变更后）
-- 可覆盖 — `llm.configure(config)` 手动注入 LLMConfig 实例（测试场景）
+- Lazy loading — config is loaded only on first call, zero import overhead
+- Thread-safe — uses `threading.Lock` internally to protect initialization
+- Resettable — `config.reload()` forces a reload (after config file changes)
+- Overridable — `config.configure(instance)` manually injects an LLMConfig instance (for testing)
 
-#### 对比
+#### Comparison
 
 ```python
-# ❌ 之前：3 行，需要传递 config 对象
+# Before: 3 lines, need to pass config object around
 from pai_llm_config import LLMConfig
-config = LLMConfig.load("llm-config.yaml", profile="production")
-client = config.create_openai_client("smart")
+cfg = LLMConfig.load("llm-config.yaml", profile="production")
+client = cfg.create_openai_client("smart")
 
-# ✅ 之后：1 行，到处直接用
-from pai_llm_config import llm
-client = llm.openai_client("smart")
+# After: 1 line, use directly anywhere
+from pai_llm_config import config
+client = config.openai_client("smart")
 ```
 
 ---
