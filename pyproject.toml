@@ -1,6 +1,6 @@
 [project]
 name = "pai-llm-config"
-version = "0.1.0"
+version = "0.1.1"
 description = "Unified configuration management for LLM applications."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -27,7 +27,8 @@ dev = ["pytest>=8.2.2"]
 openai = ["openai>=1.0"]
 anthropic = ["anthropic>=0.30"]
 litellm = ["litellm>=1.0"]
+dspy = ["dspy>=2.0"]
 redis = ["redis>=5.0"]
 vault = ["hvac>=2.0"]
 aws = ["boto3>=1.34"]
-all = ["pai-llm-config[openai,anthropic,litellm,redis,vault,aws,dev]"]
+all = ["pai-llm-config[openai,anthropic,litellm,dspy,redis,vault,aws,dev]"]
