@@ -1,0 +1,33 @@
+[project]
+name = "pai-llm-config"
+version = "0.1.0"
+description = "Unified configuration management for LLM applications."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.0",
+    "pyyaml>=6.0",
+    "python-dotenv>=1.0",
+    "tomli>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["pai_llm_config*"]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.0.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.2.2"]
+openai = ["openai>=1.0"]
+anthropic = ["anthropic>=0.30"]
+litellm = ["litellm>=1.0"]
+redis = ["redis>=5.0"]
+vault = ["hvac>=2.0"]
+aws = ["boto3>=1.34"]
+all = ["pai-llm-config[openai,anthropic,litellm,redis,vault,aws,dev]"]

@@ -1,0 +1,13 @@
+# 01_minimal.yaml - 极简配置
+# 场景：只需要一个模型跑通 Demo
+version: "1"
+
+providers:
+  openai:
+    type: openai
+    api_key: ${OPENAI_API_KEY}
+
+models:
+  gpt-4o:
+    provider: openai
+    model: gpt-4o

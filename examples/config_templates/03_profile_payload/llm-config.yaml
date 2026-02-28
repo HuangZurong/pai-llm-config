@@ -1,0 +1,18 @@
+# 03_profile_payload/llm-config.yaml - 环境载荷基础配置
+# 场景：基础配置只定义模型结构，具体密钥和 API 地址通过 Profile 独立文件载入
+version: "1"
+
+providers:
+  openai:
+    type: openai
+    # 这里不需要 api_key，会在 prod profile 文件中覆盖
+
+models:
+  gpt-4o:
+    provider: openai
+    model: gpt-4o
+
+profiles:
+  dev:
+    defaults:
+      temperature: 0.9 # 开发环境更发散

@@ -1,0 +1,46 @@
+# 04_advanced_logic.yaml - 高级逻辑载荷
+# 场景：生产级应用，包含自动降级、路由、预算和审计
+version: "1"
+
+providers:
+  openai:
+    type: openai
+    api_key: ${OPENAI_API_KEY}
+  azure:
+    type: azure
+    api_key: ${AZURE_API_KEY}
+    api_base: https://my-resource.openai.azure.com/
+
+models:
+  gpt-4o:
+    provider: openai
+    model: gpt-4o
+  gpt-4o-azure:
+    provider: azure
+    model: gpt-4o-deploy
+
+aliases:
+  main: gpt-4o
+
+# 1. 容错载荷 (Fallbacks)
+fallbacks:
+  gpt-4o: [gpt-4o-azure, claude-3-5-sonnet] # 如果 OpenAI 挂了，切 Azure，最后切 Anthropic
+
+# 2. 路由载荷 (Routing)
+routing:
+  presets:
+    summarization: gpt-4o
+    coding: gpt-4o
+
+# 3. 预算载荷 (Budgets)
+budgets:
+  global:
+    daily_limit_usd: 100.0
+  per_model:
+    gpt-4o:
+      daily_limit_usd: 50.0
+
+# 4. 追踪载荷 (Tracking)
+tracking:
+  backend: sqlite
+  sqlite_path: ./usage.db

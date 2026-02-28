@@ -1,0 +1,9 @@
+# 03_profile_payload/llm-config-prod.yaml - 生产环境独立载荷 (新增而非修改)
+# 场景：仅在部署到生产时增加此文件，注入敏感信息
+providers:
+  openai:
+    api_key: ${PROD_API_KEY}
+    api_base: https://internal-llm-proxy.company.com/v1
+
+defaults:
+  temperature: 0.1 # 生产环境要求更稳定

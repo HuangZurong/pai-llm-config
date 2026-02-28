@@ -1,0 +1,24 @@
+# 05_model_mapping.yaml - 外部模型映射载荷
+# 场景：第三方工具硬编码了 openai/gpt-4，但你希望将其透明地引导至本地或内部模型
+version: "1"
+
+providers:
+  internal-proxy:
+    type: openai
+    api_key: ${INTERNAL_KEY}
+    api_base: https://llm-gateway.local/v1
+
+models:
+  qwen-max-internal:
+    provider: internal-proxy
+    model: qwen-max
+
+aliases:
+  smart: qwen-max-internal
+
+# 映射载荷 (External Adapter Mapping)
+# 遵循“新增而非修改”原则，用于适配无法修改源码的第三方工具
+mappings:
+  "openai/gpt-4": "smart" # 强力拦截：指定供应商和模型的组合，转发给内部别名
+  "gpt-4": "smart" # 通用拦截：只要请求 gpt-4，就转发给内部别名
+  "text-davinci-003": "qwen-max-internal"

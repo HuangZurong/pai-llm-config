@@ -1,0 +1,28 @@
+# 02_standard_with_aliases.yaml - 标准配置
+# 场景：包含多个供应商和语义化别名，方便代码解耦
+version: "1"
+
+defaults:
+  temperature: 0.7
+  max_tokens: 4096
+
+providers:
+  openai:
+    type: openai
+    api_key: ${OPENAI_API_KEY}
+  anthropic:
+    type: anthropic
+    api_key: ${ANTHROPIC_API_KEY}
+
+models:
+  gpt-4o:
+    provider: openai
+    model: gpt-4o
+  claude-3-5-sonnet:
+    provider: anthropic
+    model: claude-3-5-sonnet-20240620
+
+aliases:
+  smart: gpt-4o
+  reasoning: claude-3-5-sonnet
+  cheap: gpt-4o # 暂时指向 gpt-4o
