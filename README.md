@@ -1,8 +1,15 @@
 # pai-llm-config
 
+[![PyPI version](https://img.shields.io/pypi/v/pai-llm-config.svg)](https://pypi.org/project/pai-llm-config/)
+[![Python](https://img.shields.io/pypi/pyversions/pai-llm-config.svg)](https://pypi.org/project/pai-llm-config/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![GitHub stars](https://img.shields.io/github/stars/HuangZurong/pai-llm-config?style=social)](https://github.com/HuangZurong/pai-llm-config)
+
 Unified configuration management for LLM applications.
 
 One YAML file to manage all your LLM providers, models, API keys, and parameters. Works with OpenAI, Anthropic, Azure, LiteLLM, DSPy, LangChain, and more.
+
+> If this project helps you, please consider giving it a star. It helps others discover it too.
 
 ## Features
 
@@ -192,6 +199,12 @@ model = config.route("code_generation")  # -> ModelConfig for "smart"
 ## Configuration Reference
 
 See [docs/02_config-spec.md](docs/02_config-spec.md) for the full YAML specification, and [docs/06_examples.md](docs/06_examples.md) for more usage examples.
+
+## Contributing
+
+Contributions are welcome! Feel free to open issues or submit pull requests.
+
+If you find this project useful, please give it a star on GitHub — it motivates continued development and helps others find this project.
 
 ## License
 
