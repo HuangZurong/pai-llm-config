@@ -193,6 +193,8 @@ class LLMConfig:
 
         params: Dict[str, Any] = {
             "model": model_config.model,
+            "model_id": model_config.model,
+            "model_name": model_config.model,
             "temperature": model_config.temperature,
             "max_tokens": model_config.max_tokens,
             "timeout": model_config.timeout,
@@ -237,6 +239,8 @@ class LLMConfig:
 
         params: Dict[str, Any] = {
             "model": litellm_model_name,
+            "model_id": litellm_model_name,
+            "model_name": litellm_model_name,
             "api_key": provider_config.api_key,
             "api_base": (
                 str(provider_config.api_base) if provider_config.api_base else None
@@ -264,7 +268,11 @@ class LLMConfig:
         if prefix:
             model_name = f"{prefix}/{model_config.model}"
 
-        params: Dict[str, Any] = {"model": model_name}
+        params: Dict[str, Any] = {
+            "model": model_name,
+            "model_id": model_name,
+            "model_name": model_name,
+        }
         if provider_config.api_key:
             params["api_key"] = provider_config.api_key
         if provider_config.api_base:
