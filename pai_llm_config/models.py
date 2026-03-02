@@ -79,7 +79,12 @@ class ModelConfig(BaseModel):
     """Configuration for a specific LLM model."""
 
     provider: Annotated[str, StringConstraints(min_length=1)]
-    model: Annotated[str, StringConstraints(min_length=1)]
+    model: Annotated[str, StringConstraints(min_length=1)] = Field(
+        ...,
+        validation_alias=AliasChoices(
+            "model", "model_id", "model_name", "model-id", "model-name"
+        ),
+    )
     type: ModelType = "chat"
     # Cost per 1k tokens, can be omitted if using built-in price list
     cost_per_1k_input: Optional[PositiveFloat] = None
