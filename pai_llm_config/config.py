@@ -179,8 +179,8 @@ class LLMConfig:
         return merged
 
     def list_models(self) -> List[str]:
-        """Lists all registered model names and aliases."""
-        return list(self._models.keys()) + list(self._aliases.keys())
+        """Lists all registered model names."""
+        return list(self._models.keys())
 
     def list_aliases(self) -> Dict[str, str]:
         """Returns a dictionary of all aliases and their target models."""

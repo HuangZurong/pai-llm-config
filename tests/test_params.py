@@ -233,10 +233,10 @@ class TestListMethods:
         for name in ("gpt4o", "claude", "azure-gpt", "litellm-model", "minimal"):
             assert name in models
 
-    def test_list_models_includes_aliases(self, config):
+    def test_list_models_excludes_aliases(self, config):
         models = config.list_models()
-        assert "smart" in models
-        assert "reasoning" in models
+        assert "smart" not in models
+        assert "reasoning" not in models
 
     def test_list_models_no_duplicates(self, config):
         models = config.list_models()
