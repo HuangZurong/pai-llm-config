@@ -470,12 +470,12 @@ class LLMConfig:
 
         # 2. flashboot_core (if available)
         if project_utils is not None:
-            return Path(project_utils.get_root_path())
+            return Path(project_utils.get_project_root())
         try:
             from flashboot_core.utils import project_utils as _pu
 
             project_utils = _pu
-            return Path(project_utils.get_root_path())
+            return Path(project_utils.get_project_root())
         except ImportError:
             pass
 

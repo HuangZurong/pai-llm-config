@@ -8,7 +8,12 @@ from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock
 
-from pai_llm_config.models import LLMConfigSchema, ModelConfig, ProviderConfig, AliasConfig
+from pai_llm_config.models import (
+    LLMConfigSchema,
+    ModelConfig,
+    ProviderConfig,
+    AliasConfig,
+)
 from pai_llm_config.config import (
     LLMConfig,
     ConfigValidationError,
@@ -166,7 +171,9 @@ class TestSemanticValidation:
         }
         with pytest.raises(ConfigValidationError) as exc_info:
             LLMConfig(invalid_config)
-        assert "Alias 'gpt4o' conflicts with an existing model name" in str(exc_info.value)
+        assert "Alias 'gpt4o' conflicts with an existing model name" in str(
+            exc_info.value
+        )
 
     def test_chat_alias_to_embedding_model(self):
         invalid_config = {
@@ -183,8 +190,9 @@ class TestSemanticValidation:
         }
         with pytest.raises(ConfigValidationError) as exc_info:
             LLMConfig(invalid_config)
-        assert "Chat alias 'chat_alias' points to an embedding model 'text-embed'" in str(
-            exc_info.value
+        assert (
+            "Chat alias 'chat_alias' points to an embedding model 'text-embed'"
+            in str(exc_info.value)
         )
 
     def test_fallback_model_not_found(self):
@@ -206,12 +214,15 @@ class TestSemanticValidation:
             "version": "1",
             "providers": {"p1": {"type": "openai"}},
             "models": {"m1": {"provider": "p1", "model": "m1"}},
-            "routing": {"rules": [{"when": {"max_tokens_gt": 100}, "use": "nonexistent"}]},
+            "routing": {
+                "rules": [{"when": {"max_tokens_gt": 100}, "use": "nonexistent"}]
+            },
         }
         with pytest.raises(ConfigValidationError) as exc_info:
             LLMConfig(invalid_config)
-        assert "Routing rule 0 references non-existent model or alias 'nonexistent'" in str(
-            exc_info.value
+        assert (
+            "Routing rule 0 references non-existent model or alias 'nonexistent'"
+            in str(exc_info.value)
         )
 
     def test_routing_rule_default_model_not_found(self):
@@ -282,7 +293,9 @@ class TestLoad:
     ):
         # Create .env file
         dotenv_path = temp_config_dir / ".env"
-        dotenv_path.write_text("DOTENV_KEY=dotenv_secret\nOVERRIDE_ME=dotenv_override\n")
+        dotenv_path.write_text(
+            "DOTENV_KEY=dotenv_secret\nOVERRIDE_ME=dotenv_override\n"
+        )
 
         config_content = {
             "version": "1",
@@ -304,10 +317,13 @@ class TestLoad:
     def test_flashboot_core_root_path(
         self, create_yaml_config, temp_config_dir, monkeypatch
     ):
-        from pai_llm_config.config import LLMConfig as _  # noqa: F401 ensure module loaded
+        from pai_llm_config.config import (
+            LLMConfig as _,
+        )  # noqa: F401 ensure module loaded
+
         config_module = sys.modules["pai_llm_config.config"]
         mock_project_utils = MagicMock()
-        mock_project_utils.get_root_path.return_value = str(temp_config_dir)
+        mock_project_utils.get_project_root.return_value = str(temp_config_dir)
         monkeypatch.setattr(config_module, "project_utils", mock_project_utils)
 
         config_content = {

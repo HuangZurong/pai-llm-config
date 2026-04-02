@@ -12,3 +12,6 @@ wheels/
 # Claude
 .claude
 .vscode
+
+# 
+.pytest_cache

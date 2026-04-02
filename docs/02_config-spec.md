@@ -336,7 +336,7 @@ When `LLMConfig.load()` is called without a path, it automatically finds the con
 1. Determine project root (by priority):
 
    - Environment variable `LLM_CONFIG_ROOT` (explicit override)
-   - `flashboot_core.utils.project_utils.get_root_path()` (if installed)
+   - `flashboot_core.utils.project_utils.get_project_root()` (if installed)
    - Walk up to find marker files like `pyproject.toml` / `.git` (built-in fallback)
 
 2. Search for config files from the project root (stops on first match):
@@ -371,7 +371,7 @@ def _find_root() -> Path:
     # 2. flashboot_core (if available)
     try:
         from flashboot_core.utils import project_utils
-        return Path(project_utils.get_root_path())
+        return Path(project_utils.get_project_root())
     except ImportError:
         pass
 
